@@ -15,11 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+echo '************ Start install-mq.sh ************'
+
 # Fail on any non-zero return code
 set -ex
 
 test -f /usr/bin/rpm && RPM=true || RPM=false
-test -f /usr/bin/apt-get && UBUNTU=true || UBUNTU=false
 
 # Only install the SDK package as part of the build stage
 INSTALL_SDK=${INSTALL_SDK:-0}
@@ -65,9 +66,6 @@ rm -rf ${DIR_TMP}
 # Accept the MQ license
 ${INSTALLATION_DIR}/bin/mqlicense -accept
 
-# Optional: Update the command prompt with the MQ version
-$UBUNTU && echo "mq:$(dspmqver -b -f 2)" > /etc/debian_chroot
-
 # Create the mount point for volumes, ensuring MQ has permissions to all directories
 install --directory --mode 2775 --owner 1001 --group root /mnt
 install --directory --mode 2775 --owner 1001 --group root /mnt/mqm
@@ -92,13 +90,11 @@ sed -i 's/PASS_MIN_DAYS\t0/PASS_MIN_DAYS\t1/' /etc/login.defs
 sed -i 's/PASS_MIN_LEN\t5/PASS_MIN_LEN\t8/' /etc/login.defs
 $RPM && sed -i 's/# minlen/minlen/' /etc/security/pwquality.conf
 
-$UBUNTU && PAM_FILE=/etc/pam.d/common-password
 $RPM && PAM_FILE=/etc/pam.d/password-auth
 sed -i 's/password\t\[success=1 default=ignore\]\tpam_unix\.so obscure sha512/password\t[success=1 default=ignore]\tpam_unix.so obscure sha512 minlen=8/' $PAM_FILE
 
 # List all the installed packages, for the build log
 $RPM && rpm -q --all || true
-$UBUNTU && dpkg --list || true
 
 #Update the license file to include UBI 8 instead of UBI 7
 sed -i 's/v7.0/v8.0/g' /opt/mqm/licenses/non_ibm_license.txt

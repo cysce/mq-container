@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+echo '************ Start install-build-deps.sh ************'
+
 # Install Docker and dep, required by build (assumes Ubuntu host, as used by Travis build)
 
 set -ex

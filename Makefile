@@ -1,30 +1,9 @@
-# © Copyright IBM Corporation 2017, 2021
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-###############################################################################
-# Conditional variables - you can override the values of these variables from
-# the command line
-###############################################################################
-
 include config.env
 
 # RELEASE shows what release of the container code has been built
 RELEASE ?=
 # MQ_ARCHIVE_REPOSITORY is a remote repository from which to pull the MQ_ARCHIVE (if required)
 MQ_ARCHIVE_REPOSITORY ?=
-# MQ_ARCHIVE_REPOSITORY_DEV is a remote repository from which to pull the MQ_ARCHIVE_DEV (if required)
-MQ_ARCHIVE_REPOSITORY_DEV ?=
 # MQ_ARCHIVE_REPOSITORY_USER is the user for the remote repository (if required)
 MQ_ARCHIVE_REPOSITORY_USER ?=
 # MQ_ARCHIVE_REPOSITORY_CREDENTIAL is the password/API key for the remote repository (if required)
@@ -32,19 +11,12 @@ MQ_ARCHIVE_REPOSITORY_CREDENTIAL ?=
 # MQ_ARCHIVE is the name of the file, under the downloads directory, from which MQ Advanced can
 # be installed. Does not apply to MQ Advanced for Developers
 MQ_ARCHIVE ?= IBM_MQ_$(MQ_VERSION_VRM)_$(MQ_ARCHIVE_TYPE)_$(MQ_ARCHIVE_ARCH)_NOINST.tar.gz
-# MQ_ARCHIVE_DEV is the name of the file, under the downloads directory, from which MQ Advanced
-# for Developers can be installed
-MQ_ARCHIVE_DEV ?= $(MQ_VERSION)-IBM-MQ-Advanced-for-Developers-Non-Install-$(MQ_ARCHIVE_DEV_TYPE)$(MQ_ARCHIVE_DEV_ARCH).tar.gz
-# MQ_SDK_ARCHIVE specifies the archive to use for building the golang programs.  Defaults vary on developer or advanced.
-MQ_SDK_ARCHIVE ?= $(MQ_ARCHIVE_DEV_$(MQ_VERSION))
 # Options to `go test` for the Docker tests
 TEST_OPTS_DOCKER ?=
 # Timeout for the Docker tests
 TEST_TIMEOUT_DOCKER ?= 30m
 # MQ_IMAGE_ADVANCEDSERVER is the name of the built MQ Advanced image
 MQ_IMAGE_ADVANCEDSERVER ?=ibm-mqadvanced-server
-# MQ_IMAGE_DEVSERVER is the name of the built MQ Advanced for Developers image
-MQ_IMAGE_DEVSERVER ?=ibm-mqadvanced-server-dev
 # MQ_MANIFEST_TAG is the tag to use for fat-manifest
 MQ_MANIFEST_TAG ?= $(MQ_VERSION)$(RELEASE_TAG)$(LTS_TAG)$(MQ_MANIFEST_TAG_SUFFIX)
 # MQ_TAG is the tag of the built MQ Advanced image & MQ Advanced for Developers image
@@ -75,7 +47,6 @@ LTS ?= false
 DOCKER_BUILDKIT=0
 GO_PKG_DIRS = ./cmd ./internal ./test
 MQ_ARCHIVE_TYPE=LINUX
-MQ_ARCHIVE_DEV_TYPE=Linux
 # BUILD_SERVER_CONTAINER is the name of the web server container used at build time
 BUILD_SERVER_CONTAINER=build-server
 # NUM_CPU is the number of CPUs available to Docker.  Used to control how many
@@ -83,10 +54,6 @@ BUILD_SERVER_CONTAINER=build-server
 NUM_CPU ?= $(or $(shell docker info --format "{{ .NCPU }}"),2)
 # BASE_IMAGE_TAG is a normalized version of BASE_IMAGE, suitable for use in a Docker tag
 BASE_IMAGE_TAG=$(lastword $(subst /, ,$(subst :,-,$(BASE_IMAGE))))
-#BASE_IMAGE_TAG=$(subst /,-,$(subst :,-,$(BASE_IMAGE)))
-MQ_IMAGE_DEVSERVER_BASE=mqadvanced-server-dev-base
-# Docker image name to use for JMS tests
-DEV_JMS_IMAGE=mq-dev-jms-test
 # Variables for versioning
 IMAGE_REVISION=$(shell git rev-parse HEAD)
 IMAGE_SOURCE=$(shell git config --get remote.origin.url)
@@ -106,7 +73,6 @@ endif
 # Try to figure out which archive to use from the architecture
 ifeq "$(ARCH)" "amd64"
 	MQ_ARCHIVE_ARCH=X86-64
-	MQ_ARCHIVE_DEV_ARCH=X64
 else ifeq "$(ARCH)" "ppc64le"
 	MQ_ARCHIVE_ARCH=PPC64LE
 else ifeq "$(ARCH)" "s390x"
@@ -161,62 +127,26 @@ include $(PATH_TO_MQ_TAG_CACHE)
 endif
 endif
 
+echo 'mode: ************ MQ_AMD64_TAG ************'
 MQ_AMD64_TAG=$(MQ_MANIFEST_TAG)-amd64
-MQ_S390X_TAG?=$(MQ_MANIFEST_TAG)-s390x
 
 # end image tagging
 
 MQ_IMAGE_FULL_RELEASE_NAME=$(MQ_IMAGE_ADVANCEDSERVER):$(MQ_TAG)
-MQ_IMAGE_DEV_FULL_RELEASE_NAME=$(MQ_IMAGE_DEVSERVER):$(MQ_TAG)
 
 #setup variables for fat-manifests
-MQ_IMAGE_DEVSERVER_MANIFEST=$(MQ_IMAGE_DEVSERVER):$(MQ_MANIFEST_TAG)
 MQ_IMAGE_ADVANCEDSERVER_MANIFEST=$(MQ_IMAGE_ADVANCEDSERVER):$(MQ_MANIFEST_TAG)
-MQ_IMAGE_DEVSERVER_AMD64=$(MQ_DELIVERY_REGISTRY_FULL_PATH)/$(MQ_IMAGE_DEVSERVER):$(MQ_AMD64_TAG)
-MQ_IMAGE_DEVSERVER_S390X=$(MQ_DELIVERY_REGISTRY_FULL_PATH)/$(MQ_IMAGE_DEVSERVER):$(MQ_S390X_TAG)
 MQ_IMAGE_ADVANCEDSERVER_AMD64=$(MQ_DELIVERY_REGISTRY_FULL_PATH)/$(MQ_IMAGE_ADVANCEDSERVER):$(MQ_AMD64_TAG)
-MQ_IMAGE_ADVANCEDSERVER_S390X=$(MQ_DELIVERY_REGISTRY_FULL_PATH)/$(MQ_IMAGE_ADVANCEDSERVER):$(MQ_S390X_TAG)
 
 ###############################################################################
 # Build targets
 ###############################################################################
-.PHONY: default
-default: build-devserver
-
-# Build all components (except incubating ones)
-.PHONY: all
-all: build-devserver build-advancedserver
-
-.PHONY: test-all
-test-all: build-devjmstest test-devserver test-advancedserver
-
-.PHONY: devserver
-devserver: build-devserver build-devjmstest test-devserver
-
 .PHONY: advancedserver
 advancedserver: build-advancedserver test-advancedserver
 
 # Build incubating components
 .PHONY: incubating
 incubating: build-explorer
-
-downloads/$(MQ_ARCHIVE_DEV):
-	$(info $(SPACER)$(shell printf $(TITLE)"Downloading IBM MQ Advanced for Developers "$(MQ_VERSION)$(END)))
-	mkdir -p downloads
-ifneq "$(BUILD_RSYNC_SERVER)" "$(EMPTY)"
-# Use key which is not stored in the repository to fetch the files from the fileserver
-	curl -L $(BUILD_RSYNC_ENCRYPTED_KEY_URL) -o ./host.key.gpg
-	@echo $(BUILD_RSYNC_ENCRYPTION_PASSWORD)|gpg --batch --passphrase-fd 0 ./host.key.gpg
-	chmod 600 ./host.key
-	rsync -rv -e "ssh -o BatchMode=yes -q -o StrictHostKeyChecking=no -i ./host.key" --include="*/" --include="*.tar.gz" --exclude="*" $(BUILD_RSYNC_USER)@$(BUILD_RSYNC_SERVER):"$(BUILD_RSYNC_PATH)" downloads/$(MQ_ARCHIVE_DEV)
-	-@rm host.key.gpg host.key
-else
-ifneq "$(MQ_ARCHIVE_REPOSITORY_DEV)" "$(EMPTY)"
-	curl -u $(MQ_ARCHIVE_REPOSITORY_USER):$(MQ_ARCHIVE_REPOSITORY_CREDENTIAL) -X GET "$(MQ_ARCHIVE_REPOSITORY_DEV)" -o downloads/$(MQ_ARCHIVE_DEV)
-else
-	curl -L https://public.dhe.ibm.com/ibmdl/export/pub/software/websphere/messaging/mqadv/$(MQ_ARCHIVE_DEV) -o downloads/$(MQ_ARCHIVE_DEV)
-endif
-endif
 
 downloads/$(MQ_ARCHIVE):
 	$(info $(SPACER)$(shell printf $(TITLE)"Downloading IBM MQ Advanced "$(MQ_VERSION)$(END)))
@@ -234,9 +164,6 @@ ifneq "$(MQ_ARCHIVE_REPOSITORY)" "$(EMPTY)"
 	curl -u $(MQ_ARCHIVE_REPOSITORY_USER):$(MQ_ARCHIVE_REPOSITORY_CREDENTIAL) -X GET "$(MQ_ARCHIVE_REPOSITORY)" -o downloads/$(MQ_ARCHIVE)
 endif
 endif
-
-.PHONY: downloads
-downloads: downloads/$(MQ_ARCHIVE_DEV) downloads/$(MQ_SDK_ARCHIVE)
 
 .PHONY: cache-mq-tag
 cache-mq-tag:
@@ -256,17 +183,6 @@ test-advancedserver: test/docker/vendor
 	$(info $(SPACER)$(shell printf $(TITLE)"Test $(MQ_IMAGE_ADVANCEDSERVER):$(MQ_TAG) on $(shell docker --version)"$(END)))
 	docker inspect $(MQ_IMAGE_ADVANCEDSERVER):$(MQ_TAG)
 	cd test/docker && TEST_IMAGE=$(MQ_IMAGE_ADVANCEDSERVER):$(MQ_TAG) EXPECTED_LICENSE=Production go test -parallel $(NUM_CPU) -timeout $(TEST_TIMEOUT_DOCKER) $(TEST_OPTS_DOCKER)
-
-.PHONY: build-devjmstest
-build-devjmstest: registry-login
-	$(info $(SPACER)$(shell printf $(TITLE)"Build JMS tests for developer config"$(END)))
-	cd test/messaging && docker build --tag $(DEV_JMS_IMAGE) .
-
-.PHONY: test-devserver
-test-devserver: test/docker/vendor
-	$(info $(SPACER)$(shell printf $(TITLE)"Test $(MQ_IMAGE_DEVSERVER):$(MQ_TAG) on $(shell docker --version)"$(END)))
-	docker inspect $(MQ_IMAGE_DEVSERVER):$(MQ_TAG)
-	cd test/docker && TEST_IMAGE=$(MQ_IMAGE_DEVSERVER):$(MQ_TAG) EXPECTED_LICENSE=Developer DEV_JMS_IMAGE=$(DEV_JMS_IMAGE) IBMJRE=true go test -parallel $(NUM_CPU) -timeout $(TEST_TIMEOUT_DOCKER) -tags mqdev $(TEST_OPTS_DOCKER)
 
 .PHONY: coverage
 coverage:
@@ -298,7 +214,7 @@ test-advancedserver-cover: test/docker/vendor coverage
 # Build an MQ image.  The commands used are slightly different between Docker and Podman
 define build-mq
 	$(if $(findstring docker,$(COMMAND)), @docker network create build,)
-	$(if $(findstring docker,$(COMMAND)), @docker run --rm --name $(BUILD_SERVER_CONTAINER) --network build --network-alias build --volume $(DOWNLOADS_DIR):/opt/app-root/src:ro --detach registry.redhat.io/ubi8/nginx-118 nginx -g "daemon off;",)
+	$(if $(findstring docker,$(COMMAND)), @docker run --rm --name $(BUILD_SERVER_CONTAINER) --network build --network-alias build --volume $(DOWNLOADS_DIR):/opt/app-root/src:ro --detach docker.io/library/nginx nginx -g "daemon off;",)
 	$(eval EXTRA_ARGS=$(if $(findstring docker,$(COMMAND)), --network build --build-arg MQ_URL=http://build:8080/$4, --volume $(DOWNLOADS_DIR):/var/downloads --build-arg MQ_URL=file:///var/downloads/$4))
 	# Build the new image
 	$(COMMAND) build \
@@ -330,6 +246,7 @@ PODMAN_VERSION=$(shell podman version --format "{{ .Version }}")
 command-version:
 # If we're using Docker, then check it's recent enough to support multi-stage builds
 ifneq (,$(findstring docker,$(COMMAND)))
+	$(info $(SPACER)$(shell printf $(TITLE)"Docker client $(DOCKER_CLIENT_VERSION) - Docker server $(DOCKER_SERVER_VERSION) - ************ command-version - docker ************"$(END)))
 	@test "$(word 1,$(subst ., ,$(DOCKER_CLIENT_VERSION)))" -ge "17" || ("$(word 1,$(subst ., ,$(DOCKER_CLIENT_VERSION)))" -eq "17" && "$(word 2,$(subst ., ,$(DOCKER_CLIENT_VERSION)))" -ge "05") || (echo "Error: Docker client 17.05 or greater is required" && exit 1)
 	@test "$(word 1,$(subst ., ,$(DOCKER_SERVER_VERSION)))" -ge "17" || ("$(word 1,$(subst ., ,$(DOCKER_SERVER_VERSION)))" -eq "17" && "$(word 2,$(subst ., ,$(DOCKER_CLIENT_VERSION)))" -ge "05") || (echo "Error: Docker server 17.05 or greater is required" && exit 1)
 endif
@@ -342,51 +259,35 @@ build-advancedserver-host: build-advancedserver
 
 .PHONY: build-advancedserver
 build-advancedserver: registry-login log-build-env downloads/$(MQ_ARCHIVE) command-version
-	$(info $(SPACER)$(shell printf $(TITLE)"Build $(MQ_IMAGE_ADVANCEDSERVER):$(MQ_TAG)"$(END)))
+	$(info $(SPACER)$(shell printf $(TITLE)"Build $(MQ_IMAGE_ADVANCEDSERVER):$(MQ_TAG) - ************ build-advancedserver ************"$(END)))
 	$(call build-mq,$(MQ_IMAGE_ADVANCEDSERVER),$(MQ_TAG),Dockerfile-server,$(MQ_ARCHIVE),mq-server)
 
-.PHONY: build-devserver-host
-build-devserver-host: build-devserver
-
-.PHONY: build-devserver
-build-devserver: registry-login log-build-env downloads/$(MQ_ARCHIVE_DEV) command-version
-	$(info $(shell printf $(TITLE)"Build $(MQ_IMAGE_DEVSERVER):$(MQ_TAG)"$(END)))
-	$(call build-mq,$(MQ_IMAGE_DEVSERVER),$(MQ_TAG),Dockerfile-server,$(MQ_ARCHIVE_DEV),mq-dev-server)
 
 .PHONY: build-advancedserver-cover
 build-advancedserver-cover: registry-login command-version
+	$(info $(SPACER)$(shell printf $(TITLE)"************ build-advancedserver-cover ************"$(END)))
 	$(COMMAND) build --build-arg BASE_IMAGE=$(MQ_IMAGE_ADVANCEDSERVER):$(MQ_TAG) -t $(MQ_IMAGE_ADVANCEDSERVER):$(MQ_TAG)-cover -f Dockerfile-server.cover .
-
-.PHONY: build-explorer
-build-explorer: registry-login downloads/$(MQ_ARCHIVE_DEV)
-	$(call build-mq,mq-explorer,latest-$(ARCH),incubating/mq-explorer/Dockerfile,$(MQ_ARCHIVE_DEV),mq-explorer)
-
-.PHONY: build-sdk
-build-sdk: registry-login downloads/$(MQ_ARCHIVE_DEV)
-	$(info $(shell printf $(TITLE)"Build $(MQ_IMAGE_SDK)"$(END)))
-	$(call build-mq,mq-sdk,$(MQ_TAG),incubating/mq-sdk/Dockerfile,$(MQ_SDK_ARCHIVE),mq-sdk)
 
 .PHONY: registry-login
 registry-login:
 ifneq ($(REGISTRY_USER),)
-	$(COMMAND) login -u $(REGISTRY_USER) -p $(REGISTRY_PASS) registry.redhat.io
+	$(info $(SPACER)$(shell printf $(TITLE)"************ registry-login ************"$(END)))
+	$(COMMAND) login -u $(REGISTRY_USER) -p $(REGISTRY_PASS) docker.io
 endif
 
 .PHONY: log-build-env
 log-build-vars:
-	$(info $(SPACER)$(shell printf $(TITLE)"Build environment"$(END)))
+	$(info $(SPACER)$(shell printf $(TITLE)"Build environment - ************ log-build-env ************"$(END)))
 	@echo ARCH=$(ARCH)
 	@echo MQ_VERSION=$(MQ_VERSION)
 	@echo MQ_ARCHIVE=$(MQ_ARCHIVE)
-	@echo MQ_ARCHIVE_DEV=$(MQ_ARCHIVE_DEV)
-	@echo MQ_IMAGE_DEVSERVER=$(MQ_IMAGE_DEVSERVER)
 	@echo MQ_IMAGE_ADVANCEDSERVER=$(MQ_IMAGE_ADVANCEDSERVER)
 	@echo COMMAND=$(COMMAND)
 	@echo REGISTRY_USER=$(REGISTRY_USER)
 
 .PHONY: log-build-env
 log-build-env: log-build-vars
-	$(info $(SPACER)$(shell printf $(TITLE)"Build environment - $(COMMAND) info"$(END)))
+	$(info $(SPACER)$(shell printf $(TITLE)"Build environment - $(COMMAND) info - ************ log-build-env ************"$(END)))
 	@echo Command version: $(shell $(COMMAND) --version)
 	$(COMMAND) info
 
@@ -394,11 +295,8 @@ include formatting.mk
 
 .PHONY: pull-mq-archive
 pull-mq-archive:
+	$(info $(SPACER)$(shell printf $(TITLE)"************ pull-mq-archive ************"$(END)))
 	curl -u $(MQ_ARCHIVE_REPOSITORY_USER):$(MQ_ARCHIVE_REPOSITORY_CREDENTIAL) -X GET "$(MQ_ARCHIVE_REPOSITORY)" -o downloads/$(MQ_ARCHIVE)
-
-.PHONY: pull-mq-archive-dev
-pull-mq-archive-dev:
-	curl -u $(MQ_ARCHIVE_REPOSITORY_USER):$(MQ_ARCHIVE_REPOSITORY_CREDENTIAL) -X GET "$(MQ_ARCHIVE_REPOSITORY_DEV)" -o downloads/$(MQ_ARCHIVE_DEV)
 
 .PHONY: push-advancedserver
 push-advancedserver:
@@ -407,26 +305,12 @@ push-advancedserver:
 	$(COMMAND) tag $(MQ_IMAGE_ADVANCEDSERVER)\:$(MQ_TAG) $(MQ_DELIVERY_REGISTRY_FULL_PATH)/$(MQ_IMAGE_FULL_RELEASE_NAME)
 	$(COMMAND) push $(MQ_DELIVERY_REGISTRY_FULL_PATH)/$(MQ_IMAGE_FULL_RELEASE_NAME)
 
-.PHONY: push-devserver
-push-devserver:
-	$(info $(SPACER)$(shell printf $(TITLE)"Push developer image to $(MQ_DELIVERY_REGISTRY_FULL_PATH)"$(END)))
-	$(COMMAND) login $(MQ_DELIVERY_REGISTRY_HOSTNAME) -u $(MQ_DELIVERY_REGISTRY_USER) -p $(MQ_DELIVERY_REGISTRY_CREDENTIAL)
-	$(COMMAND) tag $(MQ_IMAGE_DEVSERVER)\:$(MQ_TAG) $(MQ_DELIVERY_REGISTRY_FULL_PATH)/$(MQ_IMAGE_DEV_FULL_RELEASE_NAME)
-	$(COMMAND) push $(MQ_DELIVERY_REGISTRY_FULL_PATH)/$(MQ_IMAGE_DEV_FULL_RELEASE_NAME)
-
 .PHONY: pull-advancedserver
 pull-advancedserver:
 	$(info $(SPACER)$(shell printf $(TITLE)"Pull production image from $(MQ_DELIVERY_REGISTRY_FULL_PATH)"$(END)))
 	$(COMMAND) login $(MQ_DELIVERY_REGISTRY_HOSTNAME) -u $(MQ_DELIVERY_REGISTRY_USER) -p $(MQ_DELIVERY_REGISTRY_CREDENTIAL)
 	$(COMMAND) pull $(MQ_DELIVERY_REGISTRY_FULL_PATH)/$(MQ_IMAGE_FULL_RELEASE_NAME)
 	$(COMMAND) tag $(MQ_DELIVERY_REGISTRY_FULL_PATH)/$(MQ_IMAGE_FULL_RELEASE_NAME) $(MQ_IMAGE_ADVANCEDSERVER)\:$(MQ_TAG)
-
-.PHONY: pull-devserver
-pull-devserver:
-	$(info $(SPACER)$(shell printf $(TITLE)"Pull developer image from $(MQ_DELIVERY_REGISTRY_FULL_PATH)"$(END)))
-	$(COMMAND) login $(MQ_DELIVERY_REGISTRY_HOSTNAME) -u $(MQ_DELIVERY_REGISTRY_USER) -p $(MQ_DELIVERY_REGISTRY_CREDENTIAL)
-	$(COMMAND) pull $(MQ_DELIVERY_REGISTRY_FULL_PATH)/$(MQ_IMAGE_DEV_FULL_RELEASE_NAME)
-	$(COMMAND) tag $(MQ_DELIVERY_REGISTRY_FULL_PATH)/$(MQ_IMAGE_DEV_FULL_RELEASE_NAME) $(MQ_IMAGE_DEVSERVER)\:$(MQ_TAG)
 
 .PHONY: push-manifest
 push-manifest: build-skopeo-container
@@ -517,6 +401,7 @@ include formatting.mk
 
 .PHONY: update-release-information
 update-release-information:
+	$(info $(SPACER)$(shell printf $(TITLE)"************ update-release-information ************"$(END)))
 	sed -i.bak 's/ARG MQ_URL=.*-LinuxX64.tar.gz"/ARG MQ_URL="https:\/\/public.dhe.ibm.com\/ibmdl\/export\/pub\/software\/websphere\/messaging\/mqadv\/$(MQ_VERSION)-IBM-MQ-Advanced-for-Developers-Non-Install-LinuxX64.tar.gz"/g' Dockerfile-server && rm Dockerfile-server.bak
 	$(eval MQ_VERSION_1=$(shell echo '${MQ_VERSION}' | rev | cut -c 3- | rev))
 	sed -i.bak 's/IBM_MQ_.*_LINUX_X86-64_NOINST.tar.gz/IBM_MQ_${MQ_VERSION_1}_LINUX_X86-64_NOINST.tar.gz/g' docs/building.md && rm docs/building.md.bak
