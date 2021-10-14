@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+echo ' '
 echo '************ Start install mq-server-prereqs.sh ************'
 
 # Fail on any non-zero return code
@@ -27,12 +28,15 @@ test -f /usr/bin/rpm && RPM=true || RPM=false
 if ($RPM); then
   EXTRA_RPMS="bash bc ca-certificates file findutils gawk glibc-common grep ncurses-compat-libs passwd procps-ng sed shadow-utils tar util-linux which"
   # Install additional packages required by MQ, this install process and the runtime scripts
-  yum install -y golang
-  $YUM && yum -y install --setopt install_weak_deps=false ${EXTRA_RPMS}
+  echo ' '
+  echo '************ mq-server-prereqs.sh - Install additional packages required by MQ, this install process and the runtime scripts ************'
+  $YUM && yum -y install --setopt install_weak_deps=false golang ${EXTRA_RPMS}
   $MICRODNF && microdnf --disableplugin=subscription-manager install ${EXTRA_RPMS}
 fi
 
 # Clean up cached files
+echo ' '
+echo '************ mq-server-prereqs.sh - Clean up cached files ************'
 $YUM && yum -y clean all
 $YUM && rm -rf /var/cache/yum/*
-# $MICRODNF && microdnf --disableplugin=subscription-manager clean all
+#$MICRODNF && microdnf --disableplugin=subscription-manager clean all

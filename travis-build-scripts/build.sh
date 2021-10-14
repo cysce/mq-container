@@ -23,6 +23,14 @@ if [ "$TRAVIS_BRANCH" = "$MAIN_BRANCH" ] && [ "$TRAVIS_PULL_REQUEST" = "false" ]
   echo -en 'travis_fold:end:tag-cache-retrieve\\r'
 fi
 if [ -z "$BUILD_INTERNAL_LEVEL" ] ; then
+  if [ "$LTS" != true ] ; then
+    echo 'Building Developer JMS test image...' && echo -en 'travis_fold:start:build-devjmstest\\r'
+    make build-devjmstest
+    echo -en 'travis_fold:end:build-devjmstest\\r'
+    echo 'Building Developer image...' && echo -en 'travis_fold:start:build-devserver\\r'
+    make build-devserver
+    echo -en 'travis_fold:end:build-devserver\\r'
+  fi
   if [ "$BUILD_ALL" = true ] || [ "$LTS" = true ] ; then
       if [[ "$ARCH" = "amd64" || "$ARCH" = "s390x" ]] ; then
           echo 'Building Production image...' && echo -en 'travis_fold:start:build-advancedserver\\r'
@@ -35,8 +43,13 @@ else
   make build-devjmstest
   echo -en 'travis_fold:end:build-devjmstest\\r'
 
-  echo 'Building Production image...' && echo -en 'travis_fold:start:build-advancedserver\\r'
-  make build-advancedserver
-  echo -en 'travis_fold:end:build-advancedserver\\r'
-  
+  if [[ "$BUILD_INTERNAL_LEVEL" == *".DE"* ]]; then
+    echo 'Building Developer image...' && echo -en 'travis_fold:start:build-devserver\\r'
+    make build-devserver
+    echo -en 'travis_fold:end:build-devserver\\r'
+  else
+    echo 'Building Production image...' && echo -en 'travis_fold:start:build-advancedserver\\r'
+    make build-advancedserver
+    echo -en 'travis_fold:end:build-advancedserver\\r'
+  fi
 fi
