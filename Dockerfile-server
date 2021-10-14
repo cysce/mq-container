@@ -31,9 +31,11 @@ ARG IMAGE_TAG="Not specified"
 ARG GO_WORKDIR
 USER 0
 COPY install-mq.sh /usr/local/bin/
+COPY install-mq-server-prereqs.sh /usr/local/bin/
 RUN mkdir /opt/mqm
-RUN chmod a+x /usr/local/bin/install-mq.sh
+RUN chmod a+x /usr/local/bin/install-*.sh
 RUN sleep 1
+RUN install-mq-server-prereqs.sh
 RUN INSTALL_SDK=1 install-mq.sh
 RUN chown -R 1001:root /opt/mqm/*
 WORKDIR $GO_WORKDIR/
@@ -41,7 +43,6 @@ COPY cmd/ ./cmd
 COPY internal/ ./internal
 COPY pkg/ ./pkg
 COPY vendor/ ./vendor
-RUN yum install -y golang
 ENV CGO_CFLAGS="-I/opt/mqm/inc/" \
     CGO_LDFLAGS_ALLOW="-Wl,-rpath.*"
 ENV PATH="${PATH}:/opt/mqm/bin"
