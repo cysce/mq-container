@@ -70,7 +70,7 @@ if ($RPM); then
   # Install additional packages required by MQ, this install process and the runtime scripts
   echo ' '
   echo '************ mq-server-prereqs.sh - Install additional packages required by MQ, this install process and the runtime scripts ************'
-  $YUM && yum -y install --setopt install_weak_deps=false ${EXTRA_RPMS}
+  $YUM && yum -y install --setopt install_weak_deps=false golang ${EXTRA_RPMS}
   $MICRODNF && microdnf --disableplugin=subscription-manager install ${EXTRA_RPMS}
 fi
 
