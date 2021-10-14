@@ -1,4 +1,4 @@
-FROM docker.io/centos:8.4.2105 as mq-builder
+FROM docker.io/centos:8.4.2105
 
 ARG BASE_IMAGE=docker.io/centos
 ARG BASE_TAG=8.4.2105
