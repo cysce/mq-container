@@ -4,12 +4,14 @@ ARG BASE_IMAGE=docker.io/centos
 ARG BASE_TAG=8.4.2105
 ARG GOPATH=/opt/app-root/src/go
 ARG GO_WORKDIR=/opt/app-root/src/go/src/github.com/ibm-messaging/mq-container
+ARG MQ_URL="https://public.dhe.ibm.com/ibmdl/export/pub/software/websphere/messaging/mqadv/9.2.3.0-IBM-MQ-Advanced-for-Developers-Non-Install-LinuxX64.tar.gz"
 ###############################################################################
 # Build stage to build Go code
 ###############################################################################
 
 # The URL to download the MQ installer from in tar.gz format
 # This assumes an archive containing the MQ Non-Install packages
+ARG MQ_URL
 ARG IMAGE_REVISION="868ab5f0ddb70b281f64eb61be2b438829360fec"
 ARG IMAGE_SOURCE="https://github.com/cysce/mq-container.git"
 ARG IMAGE_TAG="ibm-mqadvanced-server:9.2.0.3-lts-ppc64le"
