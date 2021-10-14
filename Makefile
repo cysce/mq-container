@@ -36,8 +36,8 @@ MQ_MANIFEST_TAG ?= $(MQ_VERSION)$(RELEASE_TAG)$(LTS_TAG)$(MQ_MANIFEST_TAG_SUFFIX
 # MQ_TAG is the tag of the built MQ Advanced image & MQ Advanced for Developers image
 MQ_TAG ?= $(MQ_MANIFEST_TAG)-$(ARCH)
 # COMMAND is the container command to run.  "podman" or "docker"
-#COMMAND ?=$(shell type -p podman 2>&1 >/dev/null && echo podman || echo docker)
-COMMAND ?= docker
+COMMAND ?=$(shell type -p podman 2>&1 >/dev/null && echo podman || echo docker)
+#COMMAND ?= docker
 # MQ_DELIVERY_REGISTRY_HOSTNAME is a remote registry to push the MQ Image to (if required)
 MQ_DELIVERY_REGISTRY_HOSTNAME ?=
 # MQ_DELIVERY_REGISTRY_NAMESPACE is the namespace/path on the delivery registry (if required)
@@ -306,6 +306,7 @@ define build-mq
 	  --label vcs-type=git \
 	  --label vcs-url=$(IMAGE_SOURCE) \
 	  $(EXTRA_LABELS) \
+	  --no-cache \
 	  --target $5 \
 	  .
 	$(if $(findstring docker,$(COMMAND)), @docker kill $(BUILD_SERVER_CONTAINER))
