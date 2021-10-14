@@ -19,8 +19,8 @@ package main
 import (
 	"strings"
 
-	"github.com/ibm-messaging/mq-container/internal/command"
-	"github.com/ibm-messaging/mq-container/internal/mqversion"
+	"github.com/cysce/mq-container/internal/command"
+	"github.com/cysce/mq-container/internal/mqversion"
 )
 
 var (

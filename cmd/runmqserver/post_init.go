@@ -18,7 +18,7 @@ package main
 import (
 	"os"
 
-	"github.com/ibm-messaging/mq-container/internal/tls"
+	"github.com/cysce/mq-container/internal/tls"
 )
 
 // postInit is run after /var/mqm is set up
