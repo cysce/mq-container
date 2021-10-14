@@ -85,4 +85,4 @@ echo '************ mq-server-prereqs.sh - Clean up cached files ************'
 $UBUNTU && rm -rf /var/lib/apt/lists/*
 $YUM && yum -y clean all
 $YUM && rm -rf /var/cache/yum/*
-$MICRODNF && microdnf --disableplugin=subscription-manager clean all
+#$MICRODNF && microdnf --disableplugin=subscription-manager clean all
