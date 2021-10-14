@@ -11,29 +11,30 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-RUN echo $(************ Start Dockerfile-Server ************)
+
 ARG BASE_IMAGE=docker.io/centos
 ARG BASE_TAG=8.4.2105
 ARG GOPATH=/opt/app-root/src/go
 ARG GO_WORKDIR=/opt/app-root/src/go/src/github.com/ibm-messaging/mq-container
+ARG MQ_URL="https://public.dhe.ibm.com/ibmdl/export/pub/software/websphere/messaging/mqadv/9.2.3.0-IBM-MQ-Advanced-for-Developers-Non-Install-LinuxX64.tar.gz"
 ###############################################################################
 # Build stage to build Go code
 ###############################################################################
-FROM docker.io/centos:8.4.2105 as builder
+FROM registry.redhat.io/ubi8/go-toolset:1.15.13-4 as builder
 # The URL to download the MQ installer from in tar.gz format
 # This assumes an archive containing the MQ Non-Install packages
+ARG MQ_URL
 ARG IMAGE_REVISION="Not specified"
 ARG IMAGE_SOURCE="Not specified"
 ARG IMAGE_TAG="Not specified"
-ARG GOPATH
 ARG GO_WORKDIR
 USER 0
 COPY install-mq.sh /usr/local/bin/
-RUN mkdir /opt/mqm
-RUN chmod a+x /usr/local/bin/install-mq.sh
-RUN sleep 1
-RUN INSTALL_SDK=1 install-mq.sh
-RUN chown -R 1001:root /opt/mqm/*
+RUN mkdir /opt/mqm \
+  && chmod a+x /usr/local/bin/install-mq.sh \
+  && sleep 1 \
+  && INSTALL_SDK=1 install-mq.sh \
+  && chown -R 1001:root /opt/mqm/*
 WORKDIR $GO_WORKDIR/
 COPY cmd/ ./cmd
 COPY internal/ ./internal
@@ -61,6 +62,7 @@ RUN go vet ./cmd/... ./internal/...
 ###############################################################################
 FROM $BASE_IMAGE:$BASE_TAG AS mq-server
 # The MQ packages to install - see install-mq.sh for default value
+ARG MQ_URL
 ARG BASE_IMAGE
 ARG BASE_TAG
 ARG GO_WORKDIR
@@ -88,8 +90,8 @@ RUN install-mq.sh
 RUN /opt/mqm/bin/security/amqpamcf
 RUN chown -R 1001:root /opt/mqm/*
 # Create a directory for runtime data from runmqserver
-RUN mkdir -p /run/runmqserver
-RUN chown 1001:root /run/runmqserver
+RUN mkdir -p /run/runmqserver \
+  && chown 1001:root /run/runmqserver
 COPY --from=builder $GO_WORKDIR/runmqserver /usr/local/bin/
 COPY --from=builder $GO_WORKDIR/chkmq* /usr/local/bin/
 COPY NOTICES.txt /opt/mqm/licenses/notices-container.txt
@@ -119,7 +121,7 @@ ENTRYPOINT ["runmqserver"]
 ###############################################################################
 # Build stage to build C code for custom authorization service (developer-only)
 ###############################################################################
-FROM docker.io/centos as cbuilder
+FROM docker.io/centos:8.4.2105 as cbuilder
 # The URL to download the MQ installer from in tar.gz format
 # This assumes an archive containing the MQ Non-Install packages
 ARG MQ_URL
@@ -136,3 +138,51 @@ RUN mkdir /opt/mqm \
 COPY authservice/ /opt/app-root/src/authservice/
 WORKDIR /opt/app-root/src/authservice/mqhtpass
 RUN make all
+
+###############################################################################
+# Add default developer config
+###############################################################################
+FROM mq-server AS mq-dev-server
+ARG BASE_IMAGE
+ARG BASE_TAG
+ARG GO_WORKDIR
+# Enable MQ developer default configuration
+ENV MQ_DEV=true
+LABEL summary="IBM MQ Advanced for Developers Server"
+LABEL description="Simplify, accelerate and facilitate the reliable exchange of data with a security-rich messaging solution — trusted by the world’s most successful enterprises"
+LABEL vendor="IBM"
+LABEL distribution-scope="private"
+LABEL authoritative-source-url="https://www.ibm.com/software/passportadvantage/"
+LABEL url="https://www.ibm.com/products/mq/advanced"
+LABEL io.openshift.tags="mq messaging"
+LABEL io.k8s.display-name="IBM MQ Advanced for Developers Server"
+LABEL io.k8s.description="Simplify, accelerate and facilitate the reliable exchange of data with a security-rich messaging solution — trusted by the world’s most successful enterprises"
+LABEL base-image=$BASE_IMAGE
+LABEL base-image-release=$BASE_TAG
+USER 0
+COPY --from=cbuilder /opt/app-root/src/authservice/mqhtpass/build/mqhtpass.so /opt/mqm/lib64/
+COPY etc/mqm/*.ini /etc/mqm/
+COPY etc/mqm/mq.htpasswd /etc/mqm/
+RUN chmod 0660 /etc/mqm/mq.htpasswd
+COPY incubating/mqadvanced-server-dev/install-extra-packages.sh /usr/local/bin/
+RUN chmod u+x /usr/local/bin/install-extra-packages.sh \
+  && sleep 1 \
+  && install-extra-packages.sh
+# Create a directory for runtime data from runmqserver
+RUN mkdir -p /run/runmqdevserver \
+  && chown 1001:root /run/runmqdevserver
+COPY --from=builder $GO_WORKDIR/runmqdevserver /usr/local/bin/
+# Copy template files
+COPY incubating/mqadvanced-server-dev/*.tpl /etc/mqm/
+# Copy web XML files for default developer configuration
+COPY incubating/mqadvanced-server-dev/web /etc/mqm/web
+RUN chown -R 1001:root /etc/mqm/* \
+  && chmod -R g+w /etc/mqm/web \
+  && chmod +x /usr/local/bin/runmq* \
+  && install --directory --mode 2775 --owner 1001 --group root /run/runmqdevserver
+ENV MQ_ENABLE_EMBEDDED_WEB_SERVER=1 MQ_GENERATE_CERTIFICATE_HOSTNAME=localhost
+ENV LD_LIBRARY_PATH=/opt/mqm/lib64
+ENV MQ_CONNAUTH_USE_HTP=true
+ENV MQS_PERMIT_UNKNOWN_ID=true
+USER 1001
+ENTRYPOINT ["runmqdevserver"]
