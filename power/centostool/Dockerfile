@@ -1,5 +1,5 @@
 
-FROM centos:centos8.4.2105
+FROM docker.io/centos:8.4.2105
 
 ARG EXTRA_RPMS="bash bc ca-certificates file findutils gawk glibc-common grep ncurses-compat-libs passwd procps-ng sed shadow-utils tar util-linux which"
 WORKDIR /

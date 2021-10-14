@@ -1,7 +1,7 @@
-FROM centostool:centos8.4.2105
+FROM cysce/centostool:8.4.2105
 ARG GOPATH=/opt/app-root/src/go
 ARG GO_WORKDIR=/opt/app-root/src/go/src/github.com/ibm-messaging/mq-container
-ARG MQ_URL=http://buildmqnginx:80/9.2.0.3-IBM-MQ-Advanced-Non-Install-LinuxX86-64.tar.gz
+ARG MQ_URL=http://buildmqnginx/9.2.0.3-IBM-MQ-Advanced-Non-Install-LinuxPPC64LE.tar.gz
 
 LABEL summary="IBM MQ Advanced Server"
 LABEL description="Simplify, accelerate and facilitate the reliable exchange of data with a security-rich messaging solution — trusted by the world’s most successful enterprises"
@@ -15,10 +15,6 @@ LABEL io.k8s.display-name="IBM MQ Advanced Server"
 LABEL io.k8s.description="Simplify, accelerate and facilitate the reliable exchange of data with a security-rich messaging solution — trusted by the world’s most successful enterprises"
 LABEL base-image=$BASE_IMAGE
 LABEL base-image-release=$BASE_TAG
-RUN curl http://buildmqnginx/aux/runmqserver > /usr/local/bin/runmqserver
-RUN curl http://buildmqnginx/aux/chkmqhealthy > /usr/local/bin/chkmqhealthy
-RUN curl http://buildmqnginx/aux/chkmqready > /usr/local/bin/chkmqready
-RUN curl http://buildmqnginx/aux/chkmqstarted > /usr/local/bin/chkmqstarted
 COPY install-mq.sh /usr/local/bin/
 COPY install-mq-server-prereqs.sh /usr/local/bin/
 # Install MQ.  To avoid a "text file busy" error here, we sleep before installing.
