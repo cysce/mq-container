@@ -35,4 +35,4 @@ fi
 # Clean up cached files
 $YUM && yum -y clean all
 $YUM && rm -rf /var/cache/yum/*
-$MICRODNF && microdnf --disableplugin=subscription-manager clean all
+# $MICRODNF && microdnf --disableplugin=subscription-manager clean all
