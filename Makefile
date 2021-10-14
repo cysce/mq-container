@@ -36,7 +36,8 @@ MQ_MANIFEST_TAG ?= $(MQ_VERSION)$(RELEASE_TAG)$(LTS_TAG)$(MQ_MANIFEST_TAG_SUFFIX
 # MQ_TAG is the tag of the built MQ Advanced image & MQ Advanced for Developers image
 MQ_TAG ?= $(MQ_MANIFEST_TAG)-$(ARCH)
 # COMMAND is the container command to run.  "podman" or "docker"
-COMMAND ?=$(shell type -p podman 2>&1 >/dev/null && echo podman || echo docker)
+#COMMAND ?=$(shell type -p podman 2>&1 >/dev/null && echo podman || echo docker)
+COMMAND ?= docker
 # MQ_DELIVERY_REGISTRY_HOSTNAME is a remote registry to push the MQ Image to (if required)
 MQ_DELIVERY_REGISTRY_HOSTNAME ?=
 # MQ_DELIVERY_REGISTRY_NAMESPACE is the namespace/path on the delivery registry (if required)
@@ -149,6 +150,7 @@ endif
 
 MQ_AMD64_TAG=$(MQ_MANIFEST_TAG)-amd64
 MQ_S390X_TAG?=$(MQ_MANIFEST_TAG)-s390x
+MQ_PPC64LE_TAG?=$(MQ_MANIFEST_TAG)-ppc64le
 
 # end image tagging
 
@@ -162,6 +164,7 @@ MQ_IMAGE_DEVSERVER_AMD64=$(MQ_DELIVERY_REGISTRY_FULL_PATH)/$(MQ_IMAGE_DEVSERVER)
 MQ_IMAGE_DEVSERVER_S390X=$(MQ_DELIVERY_REGISTRY_FULL_PATH)/$(MQ_IMAGE_DEVSERVER):$(MQ_S390X_TAG)
 MQ_IMAGE_ADVANCEDSERVER_AMD64=$(MQ_DELIVERY_REGISTRY_FULL_PATH)/$(MQ_IMAGE_ADVANCEDSERVER):$(MQ_AMD64_TAG)
 MQ_IMAGE_ADVANCEDSERVER_S390X=$(MQ_DELIVERY_REGISTRY_FULL_PATH)/$(MQ_IMAGE_ADVANCEDSERVER):$(MQ_S390X_TAG)
+MQ_IMAGE_ADVANCEDSERVER_PPC64LE=$(MQ_DELIVERY_REGISTRY_FULL_PATH)/$(MQ_IMAGE_ADVANCEDSERVER):$(MQ_PPC64LE_TAG)
 
 ###############################################################################
 # Build targets
