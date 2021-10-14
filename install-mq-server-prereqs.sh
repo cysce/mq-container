@@ -35,15 +35,9 @@ if ($RPM); then
   $MICRODNF && microdnf --disableplugin=subscription-manager install ${EXTRA_RPMS}
 fi
 
-# Apply any bug fixes not included in base Ubuntu or MQ image.
-# Don't upgrade everything based on Docker best practices https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices/#run
-$UBUNTU && apt-get install -y libapparmor1 libsystemd0 systemd systemd-sysv libudev1 perl-base --only-upgrade
-# End of bug fixes
-
 # Clean up cached files
 echo ' '
 echo '************ mq-server-prereqs.sh - Clean up cached files ************'
-$UBUNTU && rm -rf /var/lib/apt/lists/*
 $YUM && yum -y clean all
 $YUM && rm -rf /var/cache/yum/*
 #$MICRODNF && microdnf --disableplugin=subscription-manager clean all
