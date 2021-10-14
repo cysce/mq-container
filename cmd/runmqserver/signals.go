@@ -20,7 +20,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/cysce/mq-container/internal/metrics"
+	"github.com/ibm-messaging/mq-container/internal/metrics"
 	"golang.org/x/sys/unix"
 )
 

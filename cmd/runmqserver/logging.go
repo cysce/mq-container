@@ -27,9 +27,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/cysce/mq-container/internal/command"
-	"github.com/cysce/mq-container/pkg/logger"
-	"github.com/cysce/mq-container/pkg/mqini"
+	"github.com/ibm-messaging/mq-container/internal/command"
+	"github.com/ibm-messaging/mq-container/pkg/logger"
+	"github.com/ibm-messaging/mq-container/pkg/mqini"
 )
 
 // var debug = false

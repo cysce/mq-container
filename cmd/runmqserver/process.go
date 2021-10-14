@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cysce/mq-container/internal/command"
+	"github.com/ibm-messaging/mq-container/internal/command"
 )
 
 // Verifies that we are the main or only instance of this program

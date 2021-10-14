@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/cysce/mq-container/pkg/logger"
+	"github.com/ibm-messaging/mq-container/pkg/logger"
 )
 
 var test *bool

@@ -22,9 +22,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cysce/mq-container/internal/copy"
-	"github.com/cysce/mq-container/internal/mqtemplate"
-	"github.com/cysce/mq-container/internal/tls"
+	"github.com/ibm-messaging/mq-container/internal/copy"
+	"github.com/ibm-messaging/mq-container/internal/mqtemplate"
+	"github.com/ibm-messaging/mq-container/internal/tls"
 )
 
 func startWebServer(webKeystore, webkeystorePW, webTruststoreRef string) error {

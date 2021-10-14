@@ -24,12 +24,12 @@ import (
 	"os"
 	"sync"
 
-	"github.com/cysce/mq-container/internal/ha"
-	"github.com/cysce/mq-container/internal/metrics"
-	"github.com/cysce/mq-container/internal/ready"
-	"github.com/cysce/mq-container/internal/tls"
-	"github.com/cysce/mq-container/pkg/containerruntimelogger"
-	"github.com/cysce/mq-container/pkg/name"
+	"github.com/ibm-messaging/mq-container/internal/ha"
+	"github.com/ibm-messaging/mq-container/internal/metrics"
+	"github.com/ibm-messaging/mq-container/internal/ready"
+	"github.com/ibm-messaging/mq-container/internal/tls"
+	"github.com/ibm-messaging/mq-container/pkg/containerruntimelogger"
+	"github.com/ibm-messaging/mq-container/pkg/name"
 )
 
 func doMain() error {

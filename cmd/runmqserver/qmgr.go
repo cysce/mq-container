@@ -24,11 +24,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cysce/mq-container/internal/command"
-	containerruntime "github.com/cysce/mq-container/internal/containerruntime"
-	"github.com/cysce/mq-container/internal/mqscredact"
-	"github.com/cysce/mq-container/internal/mqversion"
-	"github.com/cysce/mq-container/internal/ready"
+	"github.com/ibm-messaging/mq-container/internal/command"
+	containerruntime "github.com/ibm-messaging/mq-container/internal/containerruntime"
+	"github.com/ibm-messaging/mq-container/internal/mqscredact"
+	"github.com/ibm-messaging/mq-container/internal/mqversion"
+	"github.com/ibm-messaging/mq-container/internal/ready"
 )
 
 // createDirStructure creates the default MQ directory structure under /var/mqm
