@@ -1,6 +1,8 @@
 # download
 mkdir downloads
+
 mkdir downloads/aux
+
 cp 9.2.0.3-IBM-MQ-Advanced-Non-Install-LinuxPPC64LE.tar.gz ./downloads
 
 # Cambiar configuracion del docker desktop
