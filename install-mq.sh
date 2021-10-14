@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+echo ' '
 echo '************ Start install-mq.sh ************'
 
 # Fail on any non-zero return code
@@ -26,6 +27,7 @@ test -f /usr/bin/rpm && RPM=true || RPM=false
 INSTALL_SDK=${INSTALL_SDK:-0}
 
 # Download and extract the MQ unzippable server
+echo ' '
 echo '************ install-mq.sh - Download and extract the MQ unzippable server ************'
 DIR_TMP=/tmp/mq
 mkdir -p ${DIR_TMP}
@@ -37,6 +39,7 @@ rm -f ./*.tar.gz
 ls -la ${DIR_TMP}
 
 # Generate MQ package in INSTALLATION_DIR
+echo ' '
 echo '************ install-mq.sh - Generate MQ package in INSTALLATION_DIR ************'
 export genmqpkg_inc32=0
 export genmqpkg_incadm=1
@@ -66,10 +69,12 @@ ls -la ${INSTALLATION_DIR}
 rm -rf ${DIR_TMP}
 
 # Accept the MQ license
+echo ' '
 echo '************ install-mq.sh - Accept the MQ license ************'
 ${INSTALLATION_DIR}/bin/mqlicense -accept
 
 # Create the mount point for volumes, ensuring MQ has permissions to all directories
+echo ' '
 echo '************ install-mq.sh - Create the mount point for volumes, ensuring MQ has permissions to all directories ************'
 install --directory --mode 2775 --owner 1001 --group root /mnt
 install --directory --mode 2775 --owner 1001 --group root /mnt/mqm
@@ -80,18 +85,22 @@ install --directory --mode 2775 --owner 1001 --group root /mnt/mqm-data
 install --directory --mode 2775 --owner 1001 --group root /mnt/mqm-data/qmgrs
 
 # Create the directory for MQ configuration files
+echo ' '
 echo '************ install-mq.sh - Create the directory for MQ configuration files ************'
 install --directory --mode 2775 --owner 1001 --group root /etc/mqm
 
 # Create the directory for MQ runtime files
+echo ' '
 echo '************ install-mq.sh - Create the directory for MQ runtime files ************'
 install --directory --mode 2775 --owner 1001 --group root /run/mqm
 
 # Create a symlink for /var/mqm -> /mnt/mqm/data
+echo ' '
 echo '************ install-mq.sh - Create a symlink for /var/mqm -> /mnt/mqm/data ************'
 ln -s /mnt/mqm/data /var/mqm
 
 # Optional: Ensure any passwords expire in a timely manner
+echo ' '
 echo '************ install-mq.sh - Optional: Ensure any passwords expire in a timely manner ************'
 sed -i 's/PASS_MAX_DAYS\t99999/PASS_MAX_DAYS\t90/' /etc/login.defs
 sed -i 's/PASS_MIN_DAYS\t0/PASS_MIN_DAYS\t1/' /etc/login.defs
@@ -102,14 +111,17 @@ $RPM && PAM_FILE=/etc/pam.d/password-auth
 sed -i 's/password\t\[success=1 default=ignore\]\tpam_unix\.so obscure sha512/password\t[success=1 default=ignore]\tpam_unix.so obscure sha512 minlen=8/' $PAM_FILE
 
 # List all the installed packages, for the build log
+echo ' '
 echo '************ install-mq.sh - List all the installed packages, for the build log ************'
 $RPM && rpm -q --all || true
 
 # Update the license file to include UBI 8 instead of UBI 7
+echo ' '
 echo '************ install-mq.sh - Update the license file to include UBI 8 instead of UBI 7 ************'
 sed -i 's/v7.0/v8.0/g' /opt/mqm/licenses/non_ibm_license.txt
 
 # Copy MQ Licenses into the correct location
+echo ' '
 echo '************ install-mq.sh - Copy MQ Licenses into the correct location ************'
 mkdir -p /licenses
-cp /opt/mqm/licenses/*.txt /licenses/
+cp /opt/mqm/licenses/English.txt /licenses/
