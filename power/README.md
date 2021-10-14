@@ -17,7 +17,7 @@ docker network create buildmq
 
 DOWNLOAD_FOLDER=/home/cocdata/mq-container/downloads
 
-docker run --rm --name cysce/buildmqnginx:1.0.0 --network buildmq --network-alias buildmqnginx --volume $DOWNLOAD_FOLDER:/usr/share/nginx/html:ro --detach docker.io/nginx nginx -g "daemon off;"
+docker run --rm --name buildmqnginx --network buildmq --network-alias buildmqnginx --volume $DOWNLOAD_FOLDER:/usr/share/nginx/html:ro --detach docker.io/nginx nginx -g "daemon off;"
 
 # Crear imagen temporal builder y copiar archivos finales
 docker build --network buildmq --tag cysce/buildermq:1.0.0 --file /home/cocdata/mq-container/power/builder/Dockerfile .
@@ -40,12 +40,16 @@ docker rm buildermqaux
 docker build --network buildmq --tag docker.io/cysce/mqserver:9.2.0.3 --file /home/cocdata/mq-container/power/mqserver/Dockerfile .
 
 # Crear una instancia de mqserver
-docker run \
-  --name mqserver01 \
-  --env LICENSE=accept \
-  --env MQ_QMGR_NAME=QM1 \
-  --publish 1414:1414 \
-  --publish 9443:9443 \
-  --detach \
-  docker.io/cysce/mqserver:9.2.0.3
+docker run --name mqserver01 --env LICENSE=accept --env MQ_QMGR_NAME=QM1 --publish 1414:1414 --publish 9443:9443 --detach docker.io/cysce/mqserver:9.2.0.3
 
+ docker exec -it mqserver01 /bin/bash
+
+ dspmqver
+
+# Borrar lo demas
+
+docker stop buildmqnginx
+
+docker rmi cysce/buildermq:1.0.0
+
+docker rmi cysce/centostool:1.0.0
