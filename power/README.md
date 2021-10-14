@@ -25,11 +25,15 @@ docker build --network buildmq --tag cysce/buildermq:1.0.0 --file /home/cocdata/
 docker run --rm --name buildermqaux --network buildmq --volume $DOWNLOAD_FOLDER/aux:/usr/aux --detach cysce/buildermq:1.0.0 /usr/sbin/init
 
 docker exec buildermqaux cp /opt/app-root/src/go/src/github.com/ibm-messaging/mq-container/runmqserver /usr/aux
+
 docker exec buildermqaux cp /opt/app-root/src/go/src/github.com/ibm-messaging/mq-container/chkmqhealthy /usr/aux
+
 docker exec buildermqaux cp /opt/app-root/src/go/src/github.com/ibm-messaging/mq-container/chkmqready /usr/aux
+
 docker exec buildermqaux cp /opt/app-root/src/go/src/github.com/ibm-messaging/mq-container/chkmqstarted /usr/aux
 
 docker stop buildermqaux
+
 docker rm buildermqaux
 
 # Crear images final mqserver
