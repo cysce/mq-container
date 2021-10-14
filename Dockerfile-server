@@ -51,6 +51,7 @@ RUN go build ./cmd/chkmqready/
 RUN go build ./cmd/chkmqhealthy/
 RUN go build ./cmd/chkmqstarted/
 RUN go build ./cmd/runmqdevserver/
+RUN go build ./cmd/runmqserver/
 RUN go test -v ./cmd/runmqdevserver/...
 RUN go test -v ./cmd/runmqserver/
 RUN go test -v ./cmd/chkmqready/
@@ -93,8 +94,8 @@ RUN install-mq.sh
 RUN /opt/mqm/bin/security/amqpamcf
 RUN chown -R 1001:root /opt/mqm/*
 # Create a directory for runtime data from runmqserver
-RUN mkdir -p /run/runmqserver \
-  && chown 1001:root /run/runmqserver
+RUN mkdir -p /run/runmqserver
+RUN chown 1001:root /run/runmqserver
 COPY --from=builder $GO_WORKDIR/runmqserver /usr/local/bin/
 COPY --from=builder $GO_WORKDIR/chkmq* /usr/local/bin/
 COPY NOTICES.txt /opt/mqm/licenses/notices-container.txt
