@@ -24,7 +24,6 @@ set -ex
 test -f /usr/bin/yum && YUM=true || YUM=false
 test -f /usr/bin/microdnf && MICRODNF=true || MICRODNF=false
 test -f /usr/bin/rpm && RPM=true || RPM=false
-test -f /usr/bin/apt-get && UBUNTU=true || UBUNTU=false
 
 if ($RPM); then
   EXTRA_RPMS="bash bc ca-certificates file findutils gawk glibc-common grep ncurses-compat-libs passwd procps-ng sed shadow-utils tar util-linux which"
