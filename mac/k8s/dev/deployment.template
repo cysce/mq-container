@@ -1,0 +1,94 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: ibm-mq
+  labels:
+    name: ibm-mq
+spec:
+  capacity:
+    storage: 200Gi
+  storageClassName: ""
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: <PATH>/volumen/mq
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: ibm-mq
+spec:
+  storageClassName: ""
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 200Gi
+  selector:
+    matchLabels:
+      name: ibm-mq
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ibm-mq
+  labels:
+    app: ibm-mq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ibm-mq
+  template:
+    metadata:
+      labels:
+        app: ibm-mq
+    spec:
+      containers:
+      - name: ibm-mq
+        imagePullPolicy: IfNotPresent
+        image: mqserver:1.0.0
+        workingDir: /
+        command: ["runmqserver"]
+        ports:
+        - containerPort: 1414
+        - containerPort: 9443
+        - containerPort: 9157
+        env:
+        - name: "NODE_TLS_REJECT_UNAUTHORIZED"
+          value: "0"
+        - name: "LICENSE"
+          value: "accept"
+        - name: "MQ_QMGR_NAME"
+          value: "QM1"
+        volumeMounts:
+        - name: base
+          mountPath: /mnt/mqm
+      volumes:
+      - name: base
+        persistentVolumeClaim:
+          claimName: ibm-mq
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ibm-mq
+  labels:
+    service: ibm-mq
+spec:
+  ports:
+  - port: 1414
+    name: qmanager
+    targetPort: 1414
+    protocol: TCP
+  - port: 9443
+    name: web
+    targetPort: 9443
+    protocol: TCP
+  - port: 9157
+    name: npi
+    targetPort: 9157
+    protocol: TCP
+  selector:
+    app: ibm-mq
